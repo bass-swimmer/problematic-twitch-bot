@@ -1,0 +1,321 @@
+#the main body of this bot was coded by YouTuber Clumsy Computer
+#and the video can be found here: https://www.youtube.com/watch?v=hmWN41GMVWw&t=0s
+#credit to the original author
+
+import socket
+import datetime
+import random
+from collections import namedtuple
+import os
+import time
+import keyboard
+from pynput.keyboard import Key, Controller
+
+keyboard = Controller()
+
+import config
+
+text = 0
+
+TEMPLATE_COMMANDS = {
+    '!discord': 'Please join the {message.channel} Discord server, {message.user}',
+    '!so': 'Check out {message.text_args[0]}, they are a nice streamer!',
+}
+
+
+Message = namedtuple(
+    'Message',
+    'prefix user channel irc_command irc_args text text_command text_args',
+)
+
+forward = '!forward'
+back = '!back'
+left = '!left'
+right = '!right'
+lup = '!lup'
+ldown = '!ldown'
+lleft = 'lleft'
+lright = '!lright'
+attack = '!attack'
+spin = '!spin'
+jump = '!jump'
+backflip = '!backflip'
+crouch = '!crouch'
+bow = '!bow'
+shield = '!shield'
+rune = '!rune'
+throw = '!throw'
+parry = '!parry'
+
+class Bot:
+    def __init__(self):
+        self.irc_server = 'irc.twitch.tv'
+        self.irc_port = 6667
+        self.oauth_token = os.environ['TWITCH_TOKEN']
+        self.username = 'yobobobobobot'
+        self.channels = ['yobobobobobot', 'yoboplays']
+        self.custom_commands = {
+            if forward in test_args:
+                self.reply_with_forward,
+            #'!forward': self.reply_with_forward,
+            '!left': self.reply_with_left,
+            '!back': self.reply_with_back,
+            '!right': self.reply_with_right,
+            '!lup': self.reply_with_lup,
+            '!ldown': self.reply_with_ldown,
+            '!lleft': self.reply_with_lleft,
+            '!lright': self.reply_with_lright,
+            '!attack': self.reply_with_attack,
+            '!spin': self.reply_with_spin,
+            '!jump': self.reply_with_jump,
+            '!backflip': self.reply_with_flip,
+            '!crouch': self.reply_with_crouch,
+            '!bow': self.reply_with_bow,
+            '!shield': self.reply_with_shield,
+            '!rune': self.reply_with_rune,
+            '!throw': self.reply_with_throw,
+            '!parry': self.reply_with_parry,
+            
+        }
+        
+    
+
+    def send_privmsg(self, channel, text):
+        self.send_command(f'PRIVMSG #{channel} :{text}')
+
+    def send_command(self, command):
+        if 'PASS' not in command:
+            print(f'< {command}')
+        self.irc.send((command + '\r\n').encode())
+
+    def connect(self):
+        self.irc = socket.socket()
+        self.irc.connect((self.irc_server, self.irc_port))
+        self.send_command(f'PASS {self.oauth_token}')
+        self.send_command(f'NICK {self.username}')
+        for channel in self.channels:
+            self.send_command(f'JOIN #{channel}')
+            self.send_privmsg(channel, 'Hey there!')
+        self.loop_for_messages()
+
+    def get_user_from_prefix(self, prefix):
+        domain = prefix.split('!')[0]
+        if domain.endswith('.tmi.twitch.tv'):
+            return domain.replace('.tmi.twitch.tv', '')
+        if 'tmi.twitch.tv' not in domain:
+            return domain
+        return None
+
+    def parse_message(self, received_msg):
+        parts = received_msg.split(' ')
+
+        prefix = None
+        user = None
+        channel = None
+        text = None
+        text_command = None
+        text_args = None
+        irc_command = None
+        irc_args = None
+
+        if parts[0].startswith(':'):
+            prefix = parts[0][1:]
+            user = self.get_user_from_prefix(prefix)
+            parts = parts[1:]
+
+        text_start = next(
+            (idx for idx, part in enumerate(parts) if part.startswith(':')),
+            None
+        )
+        if text_start is not None:
+            text_parts = parts[text_start:]
+            text_parts[0] = text_parts[0][1:]
+            text = ' '.join(text_parts)
+            text_command = text_parts[0]
+            text_args = text_parts[1:]
+            parts = parts[:text_start]
+
+        irc_command = parts[0]
+        irc_args = parts[1:]
+
+        hash_start = next(
+            (idx for idx, part in enumerate(irc_args) if part.startswith('#')),
+            None
+        )
+        if hash_start is not None:
+            channel = irc_args[hash_start][1:]
+
+        message = Message(
+            prefix=prefix,
+            user=user,
+            channel=channel,
+            text=text,
+            text_command=text_command,
+            text_args=text_args,
+            irc_command=irc_command,
+            irc_args=irc_args,
+        )
+
+        return message
+
+    def handle_template_command(self, message, text_command, template):
+        text = template.format(**{'message': message})
+        self.send_privmsg(message.channel, text)
+
+
+    
+    def reply_with_forward(self, message):
+        keyboard.press('i')
+        time.sleep(2)
+        keyboard.release('i')
+        
+    def reply_with_left(self, message):
+        keyboard.press('j')
+        time.sleep(2)
+        keyboard.release('j')
+        
+    def reply_with_back(self, message):
+        keyboard.press('k')
+        time.sleep(2)
+        keyboard.release('k')
+        
+    def reply_with_right(self, message):
+        keyboard.press('l')
+        time.sleep(2)
+        keyboard.release('l')
+        
+    def reply_with_jump(self, message):
+        keyboard.press('q')
+        time.sleep(.1)
+        keyboard.release('q')
+        
+    def reply_with_flip(self, message):
+        keyboard.press('n')
+        time.sleep(.1)
+        keyboard.press('k')
+        keyboard.press('q')
+        time.sleep(.1)
+        keyboard.release('k')
+        keyboard.release('n')
+        keyboard.release('q')
+        
+    def reply_with_crouch(self, message):
+        keyboard.press('c')
+        time.sleep(1)
+        keyboard.release('c')
+        
+    def reply_with_attack(self, message):
+        keyboard.press('e')
+        time.sleep(.1)
+        keyboard.release('e')
+    
+    def reply_with_spin(self, message):
+        keyboard.press('e')
+        time.sleep(2.1)
+        keyboard.release('e')
+        
+    def reply_with_sprint(self, message):
+        keyboard.press('x')
+        time.sleep(1)
+        keyboard.release('x')
+        
+    def reply_with_rune(self, message):
+        keyboard.press('w')
+        time.sleep(.1)
+        keyboard.release('w')
+        
+    def reply_with_bow(self, message):
+        keyboard.press('r')
+        time.sleep(1)
+        keyboard.release('r')
+        
+    def reply_with_throw(self, message):
+        keyboard.press('o')
+        time.sleep(1)
+        keyboard.release('o')
+        
+    def reply_with_shield(self, message):
+        keyboard.press('n')
+        time.sleep(5)
+        keyboard.release('n')
+    
+    def reply_with_parry(self, message):
+        keyboard.press('n')
+        keyboard.press('a')
+        time.sleep(.1)
+        keyboard.release('n')
+        keybboard.release('a')
+        
+    def reply_with_a(self, message):
+        keyboard.press('a')
+        time.sleep(1)
+        keyboard.release('a')
+        
+    def reply_with_lup(self, message):
+        keyboard.press('d')
+        time.sleep(.35)
+        keyboard.release('d')
+        
+    def reply_with_ldown(self, message):
+        keyboard.press('f')
+        time.sleep(.35)
+        keyboard.release('f')
+        
+    def reply_with_lleft(self, message):
+        keyboard.press('g')
+        time.sleep(.35)
+        keyboard.release('g')
+        
+    def reply_with_lright(self, message):
+        keyboard.press('h')
+        time.sleep(.35)
+        keyboard.release('h')
+        
+    def reply_with_pause(self, message):
+        keyboard.press('m')
+        time.sleep(1)
+        keyboard.release('m')
+        
+    def reply_with_map(self, message):
+        keyboard.press(',')
+        time.sleep(1)
+        keyboard.release(',')
+
+    def reply_with_randint(self, message):
+        text = str(random.randint(0, 1000))
+        self.send_privmsg(message.channel, text)
+
+    def handle_message(self, received_msg):
+        if len(received_msg) == 0:
+            return
+
+        message = self.parse_message(received_msg)
+        print(f'> {message}')
+
+        if message.irc_command == 'PING':
+            self.send_command('PONG :tmi.twitch.tv')
+
+        if message.irc_command == 'PRIVMSG':
+            if message.text_command in TEMPLATE_COMMANDS:
+                self.handle_template_command(
+                    message,
+                    message.text_command,
+                    TEMPLATE_COMMANDS[message.text_command],
+                )
+            if message.text_command in self.custom_commands:
+                self.custom_commands[message.text_command](message)
+
+    def loop_for_messages(self):
+        while True:
+            received_msgs = self.irc.recv(2048).decode()
+            for received_msg in received_msgs.split('\r\n'):
+                self.handle_message(received_msg)
+
+
+def main():
+    bot = Bot()
+    bot.connect()
+
+
+if __name__ == '__main__':
+    main()
